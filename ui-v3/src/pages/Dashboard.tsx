@@ -111,7 +111,7 @@ const Dashboard = () => {
         {/* Asset Overview and Recent Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <AssetOverview />
-          <RecentActivity />
+          <RecentActivity walletAddress={walletData.address} />
         </div>
 
         {/* Quick Actions */}
