@@ -9,6 +9,7 @@ import { AccountBalanceService, AccountBalance } from '@/services/accountBalance
 import { MockAccountBalanceService } from '@/services/mockAccountBalanceService';
 import { SmartWalletContractService, SmartWallet, WalletActivity } from '@/services/smartWalletContractService';
 import { MockSmartWalletContractService } from '@/services/mockSmartWalletContractService';
+import { useSearchParams } from 'react-router-dom';
 
 export const useBlockchainService = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,14 +18,15 @@ export const useBlockchainService = () => {
   const [accountBalances, setAccountBalances] = useState<AccountBalance[]>([]);
   const [smartWallets, setSmartWallets] = useState<SmartWallet[]>([]);
   const [walletActivity, setWalletActivity] = useState<WalletActivity[]>([]);
-  
+  const [searchParams] = useSearchParams();
+
   const { isDemoMode } = useWalletConnection();
-  
+
   // Select the appropriate services based on demo mode
-  const blockchainService = isDemoMode ? new MockBlockchainService() : new BlockchainService();
-  const transactionDataService = isDemoMode ? new MockTransactionDataService() : new TransactionDataService();
-  const accountBalanceService = isDemoMode ? new MockAccountBalanceService() : new AccountBalanceService();
-  const smartWalletService = isDemoMode ? new MockSmartWalletContractService() : new SmartWalletContractService();
+  const blockchainService = new BlockchainService();
+  const transactionDataService = new TransactionDataService();
+  const accountBalanceService = new AccountBalanceService();
+  const smartWalletService = new SmartWalletContractService();
 
   const sendTransaction = async (params: TransactionParams) => {
     setIsLoading(true);
@@ -47,7 +49,7 @@ export const useBlockchainService = () => {
         transactionDataService.getRecentTransactions(walletAddress),
         transactionDataService.getRecentRecipients(walletAddress)
       ]);
-      
+
       setTransactions(recentTransactions);
       setRecipients(recentRecipients);
     } catch (error) {
@@ -72,7 +74,7 @@ export const useBlockchainService = () => {
   const loadSmartWallets = useCallback(async (walletAddress: string) => {
     setIsLoading(true);
     try {
-      const wallets = await smartWalletService.getSmartWallets(walletAddress);
+      const wallets = await smartWalletService.getSmartWallets(walletAddress, searchParams);
       setSmartWallets(wallets);
     } catch (error) {
       console.error('Failed to load smart wallets:', error);

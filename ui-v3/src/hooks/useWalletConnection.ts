@@ -1,11 +1,8 @@
 import { useState, useEffect } from "react";
-import {
-  connect,
-  disconnect,
-  isConnected,
-  getLocalStorage,
-} from "@stacks/connect";
-
+import { connect, disconnect, isConnected, getLocalStorage, } from "@stacks/connect";
+import { useSearchParams } from "react-router-dom";
+import { StacksNetworkName, defaultUrlFromNetwork } from '@stacks/network'
+import axios from 'axios'
 // Define the wallet data interface based on what @stacks/connect actually returns
 interface WalletData {
   addresses: {
@@ -26,29 +23,9 @@ export const useWalletConnection = () => {
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [walletData, setWalletData] = useState<WalletData | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [isDemoMode, setIsDemoMode] = useState(false);
 
-  // Demo wallet data
-  const demoWalletData: WalletData = {
-    addresses: {
-      stx: [
-        {
-          address: "SP2J6ZY48GV1EZ5V2V5RB9MP66SW86PYKKNRV9EJ7",
-          publicKey: "03abc123def456789",
-        },
-      ],
-      btc: [
-        {
-          address: "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2",
-          publicKey: "03def456abc123789",
-        },
-      ],
-    },
-    profile: {
-      name: "Demo User",
-    },
-    publicKey: "03abc123def456789",
-  };
+  const [searchParams] = useSearchParams();
+  const network = searchParams.get('network')
 
   useEffect(() => {
     // Check if user is already connected on component mount
@@ -69,11 +46,11 @@ export const useWalletConnection = () => {
                 ? userData.addresses.btc
                 : [],
             },
-          };
-          setWalletData(transformedData);
+          }
+          setWalletData(transformedData)
         }
       } catch (error) {
-        console.error("Error getting wallet data:", error);
+        console.error("Error getting wallet data:", error)
       }
     }
   }, []);
@@ -86,8 +63,8 @@ export const useWalletConnection = () => {
 
       // Transform the response to match our interface
       if (response && response.addresses) {
-        const stx = response.addresses.find((addr) => addr.symbol === "stx");
-        const btc = response.addresses.find((addr) => addr.symbol === "btc");
+        const stx = response.addresses.find((addr) => addr.symbol.toLowerCase() === "stx");
+        const btc = response.addresses.find((addr) => addr.symbol.toLowerCase() === "btc");
         const transformedData: WalletData = {
           addresses: {
             stx: [stx],
@@ -96,38 +73,25 @@ export const useWalletConnection = () => {
         };
         setWalletData(transformedData);
       }
-      console.log("Wallet connected successfully:", response);
     } catch (error) {
       console.error("Failed to connect wallet:", error);
     } finally {
       setIsConnecting(false);
     }
-  };
-
-  const connectDemoWallet = () => {
-    setIsDemoMode(true);
-    setIsWalletConnected(true);
-    setWalletData(demoWalletData);
-    console.log("Demo wallet connected");
-  };
-
+  }
   const disconnectWallet = () => {
-    if (!isDemoMode) {
-      disconnect();
-    }
-    setIsWalletConnected(false);
-    setWalletData(null);
-    setIsDemoMode(false);
-    console.log("Wallet disconnected");
-  };
+    disconnect()
+    setIsWalletConnected(false)
+    setWalletData(null)
+    console.log("Wallet disconnected")
+  }
 
   return {
     isWalletConnected,
     walletData,
     isConnecting,
-    isDemoMode,
+    searchParams,
     connectWallet,
-    connectDemoWallet,
-    disconnectWallet,
-  };
+    disconnectWallet
+  }
 };

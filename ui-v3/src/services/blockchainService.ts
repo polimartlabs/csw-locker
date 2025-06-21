@@ -1,42 +1,46 @@
+import { request } from "@stacks/connect";
+import { TransactionResult } from "@stacks/connect/dist/types/methods";
+
 export interface TransactionParams {
-  from: string;
-  to: string;
-  amount: string;
-  asset: string;
-  assetType: "token" | "nft";
-  tokenId?: string;
-  contractAddress?: string;
+   from: string;
+   to: string;
+   amount: string;
+   asset: string;
+   assetType: "token" | "nft";
+   tokenId?: string;
+   contractAddress?: string;
 }
 
 export class BlockchainService {
-  async sendTransaction(
-    params: TransactionParams
-  ): Promise<{ txHash: string; status: string }> {
-    console.log("Sending transaction with params:", params);
+   async sendTransaction(
+      params: TransactionParams
+   ): Promise<TransactionResult> {
+      console.log("Sending transaction with params:", params);
 
-    // Simulate blockchain interaction
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const txHash = `0x${Math.random().toString(16).substr(2, 64)}`;
-        resolve({
-          txHash,
-          status: "pending",
-        });
-      }, 2000);
-    });
-  }
+      const data = await request(
+         { forceWalletSelect: true },
+         "stx_transferSip10Nft",
+         {
+            asset: params.asset,
+            assetId: params.tokenId,
+            recipient: params.to,
+         }
+      );
 
-  async getTransactionStatus(txHash: string): Promise<string> {
-    console.log("Checking transaction status for:", txHash);
+      return data;
+   }
 
-    // Simulate status check
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const statuses = ["pending", "confirmed", "failed"];
-        const randomStatus =
-          statuses[Math.floor(Math.random() * statuses.length)];
-        resolve(randomStatus);
-      }, 1000);
-    });
-  }
+   async getTransactionStatus(txHash: string): Promise<string> {
+      console.log("Checking transaction status for:", txHash);
+
+      // Simulate status check
+      return new Promise((resolve) => {
+         setTimeout(() => {
+            const statuses = ["pending", "confirmed", "failed"];
+            const randomStatus =
+               statuses[Math.floor(Math.random() * statuses.length)];
+            resolve(randomStatus);
+         }, 1000);
+      });
+   }
 }

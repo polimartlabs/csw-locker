@@ -8,28 +8,27 @@ import { useEffect, useState } from "react";
 import WalletSelectorHeader from "@/components/wallet-selector/WalletSelectorHeader";
 import WalletCard from "@/components/wallet-selector/WalletCard";
 import EmptyWalletState from "@/components/wallet-selector/EmptyWalletState";
-import DemoNotice from "@/components/wallet-selector/DemoNotice";
 import LoadingState from "@/components/wallet-selector/LoadingState";
 import AddExistingWalletDialog from "@/components/wallet-selector/AddExistingWalletDialog";
-import { SmartWallet } from "@/services/smartWalletContractService";
+import { SmartWallet, WalletType } from "@/services/smartWalletContractService";
+import Notice from "@/components/wallet-selector/Notice";
 
 const WalletSelector = () => {
-  const { isDemoMode, walletData } = useWalletConnection();
-  const { loadSmartWallets, smartWallets, isLoading } = useBlockchainService();
+  const [isDemoMode, setIsDemo] = useState<boolean>(true)
   const [walletsToShow, setWalletsToShow] = useState<SmartWallet[]>([]);
   const [importedWallets, setImportedWallets] = useState<SmartWallet[]>([]);
+  const { walletData } = useWalletConnection();
+  const { loadSmartWallets, smartWallets, isLoading } = useBlockchainService();
 
   useEffect(() => {
     const fetchWalletData = async () => {
-      if (!isDemoMode && walletData?.addresses?.stx?.[0]?.address) {
+      if (walletData?.addresses?.stx?.[0]?.address) {
         console.log('Fetching wallet data for:', walletData.addresses.stx[0].address);
         try {
           await loadSmartWallets(walletData.addresses.stx[0].address);
         } catch (error) {
           console.error('Failed to fetch wallet data:', error);
         }
-      } else if (isDemoMode) {
-        await loadSmartWallets('demo-address');
       }
     };
 
@@ -58,35 +57,26 @@ const WalletSelector = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-white mb-2">
-                {isDemoMode ? "Demo Smart Wallets" : "My Smart Wallets"}
+                My Smart Wallets
               </h1>
               <p className="text-slate-400">
-                {isDemoMode
-                  ? "Explore the demo wallets to see how smart wallets work."
-                  : "Select a smart wallet to manage or create a new one."
-                }
+                Select a smart wallet to manage or create a new one.
               </p>
-              {isDemoMode && (
-                <div className="mt-2 inline-flex items-center px-3 py-1 bg-blue-600/20 text-blue-300 rounded-full text-sm">
-                  <Play className="mr-1 h-3 w-3" />
-                  Demo Mode
-                </div>
-              )}
             </div>
-            {!isDemoMode && (
-              <div className="flex gap-3">
-                <AddExistingWalletDialog
-                  onWalletAdded={handleWalletAdded}
-                  isDemoMode={isDemoMode}
-                />
-                <PrimaryButton asChild>
-                  <Link to="/create-wallet">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create New Wallet
-                  </Link>
-                </PrimaryButton>
-              </div>
-            )}
+
+            <div className="flex gap-3">
+              <AddExistingWalletDialog
+                onWalletAdded={handleWalletAdded}
+                isDemoMode={isDemoMode}
+              />
+              <PrimaryButton asChild>
+                <Link to="/create-wallet">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create New Wallet
+                </Link>
+              </PrimaryButton>
+            </div>
+
           </div>
 
           {isLoading ? (
@@ -105,7 +95,7 @@ const WalletSelector = () => {
             </div>
           )}
 
-          {isDemoMode && <DemoNotice />}
+          <Notice />
         </div>
       </div>
     </div>

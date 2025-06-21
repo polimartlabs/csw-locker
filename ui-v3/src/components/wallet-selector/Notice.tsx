@@ -2,7 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Play } from "lucide-react";
 
-const DemoNotice = () => {
+const Notice = () => {
   return (
     <Card className="bg-blue-600/10 border-blue-600/30">
       <CardContent className="p-6">
@@ -21,4 +21,4 @@ const DemoNotice = () => {
   );
 };
 
-export default DemoNotice;
+export default Notice;
