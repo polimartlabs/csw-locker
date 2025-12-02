@@ -1,6 +1,6 @@
-;; title: smart-wallet-standard
+;; title: bitcoin-locker-standard
 ;; version: 1
-;; summary: Extendible smart wallet with standard SIP-010 and SIP-009 support
+;; summary: Extendible bitcoin locker with standard SIP-010 and SIP-009 support
 (use-trait extension-trait .extension-trait.extension-trait)
 
 (use-trait sip-010-trait 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard.sip-010-trait)

@@ -77,29 +77,29 @@ path = 'contracts/rule-set-trait.clar'
 clarity_version = 3
 epoch = 3.1
 
-[contracts.smart-wallet-with-rules]
-path = 'contracts/smart-wallet-with-rules.clar'
+[contracts.bitcoin-locker-with-rules]
+path = 'contracts/bitcoin-locker-with-rules.clar'
 clarity_version = 3
 epoch = 3.1
 
-[contracts.smart-wallet-standard]
-path = 'contracts/smart-wallet-standard.clar'
+[contracts.bitcoin-locker-standard]
+path = 'contracts/bitcoin-locker-standard.clar'
 clarity_version = 3
 epoch = 3.1
 
-[contracts.smart-wallet-endpoint]
-path = 'contracts/smart-wallet-endpoint.clar'
+[contracts.bitcoin-locker-endpoint]
+path = 'contracts/bitcoin-locker-endpoint.clar'
 clarity_version = 3
 epoch = 3.1
 
-[contracts.smart-wallet-trait]
-path = 'contracts/smart-wallet-trait.clar'
+[contracts.bitcoin-locker-trait]
+path = 'contracts/bitcoin-locker-trait.clar'
 clarity_version = 3
 epoch = 3.1
 
 
-[contracts.smart-wallet-with-rules-trait]
-path = 'contracts/smart-wallet-with-rules-trait.clar'
+[contracts.bitcoin-locker-with-rules-trait]
+path = 'contracts/bitcoin-locker-with-rules-trait.clar'
 clarity_version = 3
 epoch = 3.1
 

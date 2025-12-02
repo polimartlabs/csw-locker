@@ -19,7 +19,7 @@ import { getRates } from '../services/rates';
 function Wallet({ clientConfig, setClientConfig }) {
     const { address } = useParams();
     const authedUserAddress = userSession.loadUserData().profile.stxAddress[clientConfig.network];
-    const authedUserContract = `${userSession.loadUserData().profile.stxAddress[clientConfig.network]}.smart-wallet`;
+    const authedUserContract = `${userSession.loadUserData().profile.stxAddress[clientConfig.network]}.bitcoin-locker`;
 
     const [smartWalletAddress, setSmartWalletAddress] = useState();
 

@@ -24,8 +24,8 @@ export const useSelectedWallet = () => {
     if (walletId === "demo" || isDemoMode) {
       const demoWallet: SelectedWallet = {
         id: "demo",
-        name: "Demo Smart Wallet",
-        contractId: "SP2J6ZY48GV1EZ5V2V5RB9MP66SW86PYKKNRV9EJ7.demo-smart-wallet",
+        name: "Demo Bitcoin Locker",
+        contractId: "SP2J6ZY48GV1EZ5V2V5RB9MP66SW86PYKKNRV9EJ7.demo-bitcoin-locker",
         balance: "10,000.00 STX",
         usdValue: "$20,000.00",
         address: "SP2J6ZY48GV1EZ5V2V5RB9MP66SW86PYKKNRV9EJ7",
@@ -38,8 +38,8 @@ export const useSelectedWallet = () => {
       
       const wallet: SelectedWallet = {
         id: walletId || "default-wallet",
-        name: isImportedWallet ? "Imported Smart Wallet" : "Personal Wallet",
-        contractId: walletId || "SP1ABC...XYZ123.smart-wallet-v1",
+        name: isImportedWallet ? "Imported Bitcoin Locker" : "Personal Locker",
+        contractId: walletId || "SP1ABC...XYZ123.bitcoin-locker-v1",
         balance: isImportedWallet ? "0.00 STX" : "1,234.56 STX",
         usdValue: isImportedWallet ? "$0.00" : "$2,469.12",
         address: walletData?.addresses?.stx?.[0]?.address || walletId || "SP1ABC...XYZ123",

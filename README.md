@@ -1,8 +1,8 @@
-# Smart Wallets for Stacks Blockchain
+# Bitcoin Locker for Stacks Blockchain
 
-Smart Wallet is a smart contract that holds assets in the name of one or more users. It is like a single user [executor DAO by Marvin Janssen](https://github.com/MarvinJanssen/executor-dao) and also inspired by [Lisa DAO](https://github.com/lisalab-io/liquid-stacking).
+Bitcoin Locker is a smart contract that holds assets in the name of one or more users. It is like a single user [executor DAO by Marvin Janssen](https://github.com/MarvinJanssen/executor-dao) and also inspired by [Lisa DAO](https://github.com/lisalab-io/liquid-stacking).
 
-See [DOCS](https://stackerspool.gitbook.io/smart-wallet/).
+See [DOCS](https://stackerspool.gitbook.io/bitcoin-locker/).
 
 See [ROADMAP](ROADMAP).
 
@@ -10,22 +10,22 @@ An earlier versions of smart wallets on Stacks was develop by Hiro Systems: [Sma
 
 ## Contracts
 
-### Complicated Smart Wallet
+### Complicated Bitcoin Locker
 
-- smart-wallet-with-rules.clar: most experimental wallet that uses rules with limits and inactivity tracker
-- smart-wallet-with-rules-endpoint.clar: user facing functions
+- bitcoin-locker-with-rules.clar: most experimental locker that uses rules with limits and inactivity tracker
+- bitcoin-locker-with-rules-endpoint.clar: user facing functions
 
-### Basic Smart Wallet
+### Basic Bitcoin Locker
 
-- smart-wallet-standard.clar: just a simple wallet
+- bitcoin-locker-standard.clar: just a simple locker
 
 ## Extensions
 
-Extensions are smart contracts that can be execute anything in the name of the smart contract. The expect a buffer as payload containing a serialized Clarity Value of a certain type. The tx-sender and contract-caller of the extension is the smart wallet.
+Extensions are smart contracts that can be execute anything in the name of the smart contract. The expect a buffer as payload containing a serialized Clarity Value of a certain type. The tx-sender and contract-caller of the extension is the bitcoin locker.
 
 There is a stateless contract that provides convenient functions to popular call extensions
 
-- smart-wallet-endpoint.clar: user facing functions
+- bitcoin-locker-endpoint.clar: user facing functions
 
 ### Sponsored STX transfer
 
@@ -41,7 +41,7 @@ Payload type:
 
 Acts as the stacker of a pool and calls pox-4 contract functions according to provided action. The delegated amount is transferred to this extension for stacking and all stx tokens can be withdrawn afterwards.
 
-**Note**, each wallet needs its own stacking extension.
+**Note**, each locker needs its own stacking extension.
 
 Supported actions:
 

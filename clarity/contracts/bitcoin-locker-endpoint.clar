@@ -1,11 +1,11 @@
 
-;; title: smart-wallet-endpoint
+;; title: bitcoin-locker-endpoint
 ;; version:
 ;; summary:
 ;; description:
 (define-constant err-invalid-payload (err u5000))
 (use-trait sip-010-token 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard.sip-010-trait)
-(use-trait wallet-trait .smart-wallet-trait.smart-wallet-trait)
+(use-trait wallet-trait .bitcoin-locker-trait.bitcoin-locker-trait)
 (use-trait extension-trait .extension-trait.extension-trait)
 
 (define-public (stx-transfer-sponsored (sm <wallet-trait>) (details {amount: uint, to: principal, fees: uint}))

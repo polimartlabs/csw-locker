@@ -1,4 +1,4 @@
-;; title: smart-wallet-with-rules
+;; title: bitcoin-locker-with-rules
 ;; version:
 ;; summary:
 ;; description:

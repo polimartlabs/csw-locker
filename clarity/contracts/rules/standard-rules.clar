@@ -17,7 +17,7 @@
             (new-spent-amount (+ amount spent-amount))
         )
         (var-set weekly-amount new-spent-amount)
-        (asserts! (is-eq contract-caller .smart-wallet-with-rules) err-unauthorised)
+        (asserts! (is-eq contract-caller .bitcoin-locker-with-rules) err-unauthorised)
         (ok (and (< amount (* u100 E6)) (< spent-amount (* u1000 E6))))
     )
 )
