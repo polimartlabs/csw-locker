@@ -4,7 +4,7 @@
 
 Your Telegram Bot API Token has been configured:
 ```
-8478130428:AAHrc6jGHSwzgkC8LHj8zwqrPU7I4TRfOus
+
 ```
 
 ## Setup Steps
