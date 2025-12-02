@@ -21,7 +21,7 @@ An earlier versions of smart wallets on Stacks was develop by Hiro Systems: [Sma
 
 ## Extensions
 
-Extensions are smart contracts that can be execute anything in the name of the smart contract. The expect a buffer as payload containing a serialized Clarity Value of a certain type. The tx-sender and contract-caller of the extension is the bitcoin locker.
+Extensions are smart contracts that can   execute anything in the name of the smart contract. The expect a buffer as payload containing a serialized Clarity Value of a certain type. The tx-sender and contract-caller of the extension is the bitcoin locker.
 
 There is a stateless contract that provides convenient functions to popular call extensions
 

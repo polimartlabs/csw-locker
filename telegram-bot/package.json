@@ -1,0 +1,20 @@
+{
+  "name": "bitcoin-locker-telegram-bot",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "server",
+    "mini-app",
+    "shared"
+  ],
+  "scripts": {
+    "dev:bot": "pnpm --filter server dev",
+    "dev:app": "pnpm --filter mini-app dev",
+    "build": "pnpm --filter server build && pnpm --filter mini-app build && pnpm --filter shared build",
+    "lint": "pnpm --filter server lint && pnpm --filter mini-app lint && pnpm --filter shared lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3"
+  }
+}
+

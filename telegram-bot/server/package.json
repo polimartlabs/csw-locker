@@ -1,0 +1,31 @@
+{
+  "name": "@bitcoin-locker/telegram-bot-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@stacks/connect": "^8.1.9",
+    "@stacks/network": "^6.7.0",
+    "@stacks/transactions": "^6.9.0",
+    "better-sqlite3": "^11.7.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "grammy": "^1.22.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.5.5",
+    "eslint": "^9.9.0",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3"
+  }
+}
+

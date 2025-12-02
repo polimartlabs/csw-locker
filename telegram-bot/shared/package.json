@@ -1,0 +1,24 @@
+{
+  "name": "@bitcoin-locker/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@stacks/connect": "^8.1.9",
+    "@stacks/network": "^6.7.0",
+    "@stacks/transactions": "^6.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.5",
+    "eslint": "^9.9.0",
+    "typescript": "^5.5.3"
+  }
+}
+
