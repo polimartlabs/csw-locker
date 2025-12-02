@@ -8,3 +8,4 @@ build/
 coverage/
 .nyc_output/
 
+BOT_TOKEN.md
