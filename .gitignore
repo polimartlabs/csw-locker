@@ -1,9 +1,28 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-**/settings/Mainnet.toml
-**/settings/Testnet.toml
-.cache/**
-history.txt
-
-node_modules/
-.next
+node_modules
 dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Synced contract sources (pulled from cs-locker-contract repo)
+public/clarity/mainnet/*.clar
+public/clarity/testnet/*.clar

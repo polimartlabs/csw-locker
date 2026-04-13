@@ -1,89 +1,44 @@
-# Smart Wallets for Stacks Blockchain
+# CSW Locker
 
-Smart Wallet is a smart contract that holds assets in the name of one or more users. It is like a single user [executor DAO by Marvin Janssen](https://github.com/MarvinJanssen/executor-dao) and also inspired by [Lisa DAO](https://github.com/lisalab-io/liquid-stacking).
+A client-side web app for interacting with **Smart Wallets on the Stacks blockchain**. Smart wallets are Clarity contracts that hold assets (STX, SIP-010 FTs, SIP-009 NFTs) on behalf of one or more users. See the [docs](https://stackerspool.gitbook.io/smart-wallet/) and [ROADMAP](ROADMAP.md).
 
-See [DOCS](https://stackerspool.gitbook.io/smart-wallet/).
+This repository contains the UI only. Contracts live in a separate repository and are synced into `public/clarity/` — see [Contracts](#contracts) below.
 
-See [ROADMAP](ROADMAP).
+## Develop
 
-An earlier versions of smart wallets on Stacks was develop by Hiro Systems: [Smart Wallet](https://github.com/hirosystems/smart-wallet).
+```bash
+pnpm install
+pnpm run dev          # Vite dev server on port 8080
+pnpm run build
+pnpm run lint
+pnpm run test
+```
+
+No backend: blockchain data is fetched from public Hiro APIs, and signing is delegated to a Stacks wallet browser extension via `@stacks/connect`.
+
+## Demo mode
+
+Append `?demo=true` to any URL to explore the app with a hardcoded address. Demo mode is read-only — all write operations are no-ops.
 
 ## Contracts
 
-### Complicated Smart Wallet
+Smart wallet and extension Clarity sources live in the separate [`cs-locker-contract`](https://github.com/polimartlabs/cs-locker-contract) repo. The UI reads them at runtime from `public/clarity/{mainnet,testnet}/`.
 
-- smart-wallet-with-rules.clar: most experimental wallet that uses rules with limits and inactivity tracker
-- smart-wallet-with-rules-endpoint.clar: user facing functions
+Sync contracts from the contract repo:
 
-### Basic Smart Wallet
-
-- smart-wallet-standard.clar: just a simple wallet
-
-## Extensions
-
-Extensions are smart contracts that can be execute anything in the name of the smart contract. The expect a buffer as payload containing a serialized Clarity Value of a certain type. The tx-sender and contract-caller of the extension is the smart wallet.
-
-There is a stateless contract that provides convenient functions to popular call extensions
-
-- smart-wallet-endpoint.clar: user facing functions
-
-### Sponsored STX transfer
-
-Sends stx to a recipient and for sponsored txs some amount to cover fees to the tx sponsor.
-
-Payload type:
-
-```
-{amount: uint, to: principal, fees: uint}
+```bash
+./scripts/sync-contracts.sh
 ```
 
-### Stacking with a pool
+By default this pulls from a sibling checkout at `../cs-locker-contract`. Override with `CONTRACTS_SRC=/path/to/repo ./scripts/sync-contracts.sh`.
 
-Acts as the stacker of a pool and calls pox-4 contract functions according to provided action. The delegated amount is transferred to this extension for stacking and all stx tokens can be withdrawn afterwards.
+### Contract types
 
-**Note**, each wallet needs its own stacking extension.
+- **Basic:** `smart-wallet-standard.clar` — minimal wallet.
+- **Complicated:** `smart-wallet-with-rules.clar` + `smart-wallet-with-rules-endpoint.clar` — rules, limits, inactivity tracker.
+- **Endpoint:** `smart-wallet-endpoint.clar` — stateless helper for calling extensions.
+- **Extensions:** execute arbitrary logic in the name of the smart wallet. `tx-sender` and `contract-caller` inside an extension are the wallet itself. Current extensions cover sponsored STX transfers, pox-4 stacking delegation, and unsafe SIP-010 FT transfers (xBTC).
 
-Supported actions:
+## Deployment
 
-| name             | pox-4 call                  |
-| ---------------- | --------------------------- |
-| `delegate`       | calls `delegate-stx`        |
-| `revoke`         | calls `revoke-delegate-stx` |
-| any other action | withdraws all stx tokens    |
-
-Payload type:
-
-```
-{
-    action: (string-ascii 10),
-    amount-ustx: uint,
-    delegate-to: principal,
-    until-burn-ht: (optional uint),
-    pox-addr: (optional { version: (buff 1),
-    hashbytes: (buff 32) })
-}
-```
-
-### Transfer Unsafe SIP 10 Tokens (FT)
-
-Sends SIP-010 tokens to the provided recipient for tokens that can't be transferred when sender and tx-sender do not match. Supports the following tokens only:
-
-| Symbol | Contract                                                  |
-| ------ | --------------------------------------------------------- |
-| xbtc   | SP3DX3H4FEYZJZ586MFBS25ZW3HZDMEW92260R2PR.Wrapped-Bitcoin |
-
-Payload type:
-
-```
-{amount: uint, to: principal, token: principal}
-```
-
-## UI
-
-In folder `ui` a basic web interface is developed. It allows to interact with smart wallets.
-
-## Development
-
-Use `clarinet check` and `pnpm test` to verify the contracts.
-
-In folder `ui`, call `pnpm install` and `pnpm dev` to launch the ui.
+Netlify, SPA redirects in `netlify.toml`.
