@@ -19,20 +19,27 @@ export const useSmartWalletContractService = (walletAddress?: string) => {
   const [error, setError] = useState<string | null>(null);
 
   // Check if we're in demo mode
-  const isDemoMode = useDemoMode();
+  const { isDemoMode } = useDemoMode();
 
-  // Select the appropriate service based on demo mode
+  // Demo mode should never override a connected real wallet address.
+  const useDemoServices =
+    isDemoMode &&
+    (!walletAddress ||
+      walletAddress.includes("demo-wallet") ||
+      walletAddress.includes("demo-address"));
+
+  // Select the appropriate service based on effective mode
   const smartWalletService = useMemo(() => {
-    return isDemoMode
+    return useDemoServices
       ? new MockSmartWalletContractService()
       : new SmartWalletContractService();
-  }, [isDemoMode]);
+  }, [useDemoServices]);
 
   const balanceService = useMemo(() => {
-    return isDemoMode
+    return useDemoServices
       ? new MockAccountBalanceService()
       : new AccountBalanceService();
-  }, [isDemoMode]);
+  }, [useDemoServices]);
 
   /**
    * Fetches both smart wallets and extension contracts for the given wallet address

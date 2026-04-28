@@ -12,12 +12,18 @@ import { useSelectedWallet } from "@/hooks/useSelectedWallet";
 import useSmartWalletContractService from "@/hooks/useSmartWalletContractService";
 import { CheckCircle, Puzzle, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
+import { getVaultFromRouteId } from "@/lib/vaultRoute";
 
 const GenericActions = () => {
   const { walletId } = useParams<{ walletId: `${string}.${string}` }>()
+  const vaultFromRoute = getVaultFromRouteId(walletId);
   const { extensions } = useSmartWalletContractService(walletId?.split('.')[0])
   const [extensionIndex, setExtensionIndex] = useState<number>(0)
+
+  if (vaultFromRoute) {
+    return <Navigate to={`/btcvault/${vaultFromRoute.id}/settings`} replace />;
+  }
 
   return (
     <WalletLayout>

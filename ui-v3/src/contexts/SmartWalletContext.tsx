@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useWalletConnection } from './WalletConnectionContext';
 import { useNetwork } from './NetworkContext';
 import { SmartWallet, ContractInfoEntry } from '@/services/interfaces';
+import { buildScopedStorageKey } from '@/lib/userScope';
 
 interface SmartWalletContextType {
   selectedWallet: (SmartWallet & ContractInfoEntry) | null;
@@ -18,6 +19,10 @@ interface SmartWalletContextType {
 const STORAGE_KEY = 'smartWallets';
 const SELECTED_WALLET_KEY = 'selectedWallet';
 
+function scopedNetworkKey(baseKey: string, network: string): string {
+  return buildScopedStorageKey(`${baseKey}_${network}`);
+}
+
 const SmartWalletContext = createContext<SmartWalletContextType | undefined>(undefined);
 
 export const SmartWalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -30,21 +35,35 @@ export const SmartWalletProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // Load wallets from localStorage on mount
   useEffect(() => {
-    const storedWallets = localStorage.getItem(`${STORAGE_KEY}_${network}`);
+    const scopedWalletsKey = scopedNetworkKey(STORAGE_KEY, network);
+    const legacyWalletsKey = `${STORAGE_KEY}_${network}`;
+    const storedWallets =
+      localStorage.getItem(scopedWalletsKey) ??
+      (scopedWalletsKey === legacyWalletsKey ? null : localStorage.getItem(legacyWalletsKey));
     if (storedWallets) {
       try {
         const parsed = JSON.parse(storedWallets);
         setSmartWalletsState(parsed);
+        if (!localStorage.getItem(scopedWalletsKey)) {
+          localStorage.setItem(scopedWalletsKey, storedWallets);
+        }
       } catch (e) {
         console.error('Failed to parse stored wallets:', e);
       }
     }
 
-    const storedSelected = localStorage.getItem(`${SELECTED_WALLET_KEY}_${network}`);
+    const scopedSelectedKey = scopedNetworkKey(SELECTED_WALLET_KEY, network);
+    const legacySelectedKey = `${SELECTED_WALLET_KEY}_${network}`;
+    const storedSelected =
+      localStorage.getItem(scopedSelectedKey) ??
+      (scopedSelectedKey === legacySelectedKey ? null : localStorage.getItem(legacySelectedKey));
     if (storedSelected) {
       try {
         const parsed = JSON.parse(storedSelected);
         setSelectedWalletState(parsed);
+        if (!localStorage.getItem(scopedSelectedKey)) {
+          localStorage.setItem(scopedSelectedKey, storedSelected);
+        }
       } catch (e) {
         console.error('Failed to parse selected wallet:', e);
       }
@@ -54,16 +73,16 @@ export const SmartWalletProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Persist wallets to localStorage
   useEffect(() => {
     if (smartWallets.length > 0) {
-      localStorage.setItem(`${STORAGE_KEY}_${network}`, JSON.stringify(smartWallets));
+      localStorage.setItem(scopedNetworkKey(STORAGE_KEY, network), JSON.stringify(smartWallets));
     }
   }, [smartWallets, network]);
 
   // Persist selected wallet to localStorage
   useEffect(() => {
     if (selectedWallet) {
-      localStorage.setItem(`${SELECTED_WALLET_KEY}_${network}`, JSON.stringify(selectedWallet));
+      localStorage.setItem(scopedNetworkKey(SELECTED_WALLET_KEY, network), JSON.stringify(selectedWallet));
     } else {
-      localStorage.removeItem(`${SELECTED_WALLET_KEY}_${network}`);
+      localStorage.removeItem(scopedNetworkKey(SELECTED_WALLET_KEY, network));
     }
   }, [selectedWallet, network]);
 

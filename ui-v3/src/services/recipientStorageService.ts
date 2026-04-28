@@ -3,18 +3,51 @@
  * Handles adding, removing, and retrieving removed recipients
  * Also manages transaction history and recipient frequency tracking
  */
+import { buildScopedStorageKey } from '@/lib/userScope';
+
+type StoredTransaction = {
+  id: string;
+  from: string;
+  to: string;
+  amount: string;
+  asset: string;
+  timestamp: string;
+  txHash: string | null;
+};
+
 export class RecipientStorageService {
   private static readonly REMOVED_RECIPIENTS_KEY = 'removedRecipients';
   private static readonly TRANSACTION_HISTORY_KEY = 'transactionHistory';
   private static readonly RECIPIENT_FREQUENCY_KEY = 'recipientFrequency';
+
+  private static scopedKey(baseKey: string): string {
+    return buildScopedStorageKey(baseKey);
+  }
+
+  private static readScoped<T>(baseKey: string, fallback: T): T {
+    try {
+      const scopedKey = this.scopedKey(baseKey);
+      const scopedRaw = localStorage.getItem(scopedKey);
+      if (scopedRaw != null) return JSON.parse(scopedRaw) as T;
+      if (scopedKey !== baseKey) {
+        const legacyRaw = localStorage.getItem(baseKey);
+        if (legacyRaw != null) {
+          localStorage.setItem(scopedKey, legacyRaw);
+          return JSON.parse(legacyRaw) as T;
+        }
+      }
+    } catch (error) {
+      console.error('Error reading scoped localStorage value:', error);
+    }
+    return fallback;
+  }
 
   /**
    * Get all removed recipient addresses from localStorage
    */
   static getRemovedRecipients(): string[] {
     try {
-      const stored = localStorage.getItem(this.REMOVED_RECIPIENTS_KEY);
-      return stored ? JSON.parse(stored) : [];
+      return this.readScoped<string[]>(this.REMOVED_RECIPIENTS_KEY, []);
     } catch (error) {
       console.error('Error reading removed recipients from localStorage:', error);
       return [];
@@ -29,7 +62,7 @@ export class RecipientStorageService {
       const removedRecipients = this.getRemovedRecipients();
       if (!removedRecipients.includes(address)) {
         removedRecipients.push(address);
-        localStorage.setItem(this.REMOVED_RECIPIENTS_KEY, JSON.stringify(removedRecipients));
+        localStorage.setItem(this.scopedKey(this.REMOVED_RECIPIENTS_KEY), JSON.stringify(removedRecipients));
       }
     } catch (error) {
       console.error('Error removing recipient from localStorage:', error);
@@ -71,7 +104,7 @@ export class RecipientStorageService {
       
       transactionHistory.unshift(newTransaction);
       const limitedHistory = transactionHistory.slice(0, 100);
-      localStorage.setItem(this.TRANSACTION_HISTORY_KEY, JSON.stringify(limitedHistory));
+      localStorage.setItem(this.scopedKey(this.TRANSACTION_HISTORY_KEY), JSON.stringify(limitedHistory));
       
       // Update recipient frequency
       this.updateRecipientFrequency(toAddress, now);
@@ -83,10 +116,9 @@ export class RecipientStorageService {
   /**
    * Get transaction history from localStorage
    */
-  static getTransactionHistory(): any[] {
+  static getTransactionHistory(): StoredTransaction[] {
     try {
-      const stored = localStorage.getItem(this.TRANSACTION_HISTORY_KEY);
-      return stored ? JSON.parse(stored) : [];
+      return this.readScoped<StoredTransaction[]>(this.TRANSACTION_HISTORY_KEY, []);
     } catch (error) {
       console.error('Error reading transaction history from localStorage:', error);
       return [];
@@ -111,7 +143,7 @@ export class RecipientStorageService {
         };
       }
       
-      localStorage.setItem(this.RECIPIENT_FREQUENCY_KEY, JSON.stringify(frequencyData));
+      localStorage.setItem(this.scopedKey(this.RECIPIENT_FREQUENCY_KEY), JSON.stringify(frequencyData));
     } catch (error) {
       console.error('Error updating recipient frequency:', error);
     }
@@ -122,8 +154,10 @@ export class RecipientStorageService {
    */
   static getRecipientFrequency(): Record<string, { count: number; lastSent: string; firstSent: string }> {
     try {
-      const stored = localStorage.getItem(this.RECIPIENT_FREQUENCY_KEY);
-      return stored ? JSON.parse(stored) : {};
+      return this.readScoped<Record<string, { count: number; lastSent: string; firstSent: string }>>(
+        this.RECIPIENT_FREQUENCY_KEY,
+        {}
+      );
     } catch (error) {
       console.error('Error reading recipient frequency from localStorage:', error);
       return {};

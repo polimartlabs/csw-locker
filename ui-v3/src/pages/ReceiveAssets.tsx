@@ -18,6 +18,11 @@ import { useUserWalletConnection } from "@/hooks/useWalletConnection";
 import { AccountBalanceService } from "@/services/accountBalanceService";
 import { Switch } from "@/components/ui/switch";
 import { formatClarityValues } from "@/utils/formartClarityValues";
+import { getBtcVault } from "@/lib/btcVaultStorage";
+import { useAssetPrices } from "@/contexts/AssetPricesContext";
+import { getAddressBalanceSats, getTaprootOrdinalInscriptions, type OrdinalInscription } from "@/services/btcMempoolService";
+import { request as stacksRequest } from "@stacks/connect";
+import { useBtcWallet } from "@/contexts/BtcWalletContext";
 
 // NFT Item Card Component for progressive rendering
 const NftItemCard = ({ item, isSelected, onSelect, onFetchMetadata, delay = 0 }: {
@@ -99,6 +104,7 @@ const NftItemCard = ({ item, isSelected, onSelect, onFetchMetadata, delay = 0 }:
 
 const ReceiveAssets = () => {
   const { walletId } = useParams<{ walletId: `${string}.${string}` }>()
+  const vaultFromRoute = walletId ? getBtcVault(walletId) : null;
   const { userData } = useUserWalletConnection()
   const {
     loading: balanceLoading,
@@ -129,7 +135,13 @@ const ReceiveAssets = () => {
   const [stxUsd, setStxUsd] = useState<number | null>(null);
   const [showMaxWarning, setShowMaxWarning] = useState(false);
   const [selectedAssetIndex, setSelectedAssetIndex] = useState<string>('');
+  const [vaultReceiveAmountBtc, setVaultReceiveAmountBtc] = useState("");
+  const [vaultBalanceSats, setVaultBalanceSats] = useState<number | null>(null);
+  const [vaultOrdinals, setVaultOrdinals] = useState<OrdinalInscription[]>([]);
+  const [depositingToVault, setDepositingToVault] = useState(false);
   const { toast } = useToast();
+  const { btcUsd } = useAssetPrices();
+  const { taprootAddress } = useBtcWallet();
 
   const copyToClipboard = () => {
     if (walletId) {
@@ -377,6 +389,137 @@ const ReceiveAssets = () => {
     }
     setShowMaxWarning(false);
   };
+
+  useEffect(() => {
+    if (!vaultFromRoute) return;
+    let cancelled = false;
+    void getAddressBalanceSats(vaultFromRoute.derivedVaultAddress).then((balance) => {
+      if (!cancelled) setVaultBalanceSats(balance);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [vaultFromRoute?.derivedVaultAddress]);
+
+  useEffect(() => {
+    if (!taprootAddress) {
+      setVaultOrdinals([]);
+      return;
+    }
+    let cancelled = false;
+    void getTaprootOrdinalInscriptions(taprootAddress).then((rows) => {
+      if (!cancelled) setVaultOrdinals(rows.slice(0, 3));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [taprootAddress]);
+
+  if (vaultFromRoute) {
+    const vaultReceiveAmountSats = Math.round((Number.parseFloat(vaultReceiveAmountBtc) || 0) * 1e8);
+    const vaultUsd = vaultBalanceSats != null && btcUsd != null ? (vaultBalanceSats / 1e8) * btcUsd : null;
+
+    const handleVaultDeposit = async () => {
+      if (vaultReceiveAmountSats <= 0) {
+        toast({ title: "Enter amount", description: "Amount must be greater than zero.", variant: "destructive" });
+        return;
+      }
+      setDepositingToVault(true);
+      try {
+        const network = getClientConfig(vaultFromRoute.linkedBtcAddress).network;
+        const result = await stacksRequest("sendTransfer", {
+          recipients: [{ address: vaultFromRoute.derivedVaultAddress, amount: vaultReceiveAmountSats }],
+          network,
+        });
+        toast({ title: "Deposit submitted", description: result?.txid ?? "Transaction sent to wallet." });
+      } catch (error) {
+        toast({
+          title: "Deposit request failed",
+          description: error instanceof Error ? error.message : "Wallet request failed.",
+          variant: "destructive",
+        });
+      } finally {
+        setDepositingToVault(false);
+      }
+    };
+    return (
+      <WalletLayout
+        mode="btc-vault"
+        vaultMeta={{ id: vaultFromRoute.id, name: vaultFromRoute.name, address: vaultFromRoute.derivedVaultAddress }}
+      >
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Receive BTC</h1>
+            <p className="text-slate-400">Create a deposit request and share this vault address.</p>
+          </div>
+          <Card id="vault-receive" className="bg-slate-800/50 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center">
+                <ArrowDown className="mr-2 h-5 w-5 text-green-400" />
+                Vault deposit request
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="w-48 h-48 mx-auto bg-white rounded-lg flex items-center justify-center">
+                <QRCode value={vaultFromRoute.derivedVaultAddress} size={150} />
+              </div>
+              <div className="rounded-md border border-slate-700 bg-slate-900/40 p-3 space-y-1 text-sm">
+                <div className="text-slate-300 font-medium">Vault assets</div>
+                <div className="text-slate-400">
+                  BTC: {vaultBalanceSats == null ? "Loading…" : `${(vaultBalanceSats / 1e8).toFixed(8)} BTC`}
+                  {vaultUsd != null && <span className="ml-2 text-emerald-400">(${vaultUsd.toFixed(2)})</span>}
+                </div>
+                <div className="text-slate-400">
+                  Top ordinals: {taprootAddress ? (vaultOrdinals.length === 0 ? "None" : `${vaultOrdinals.length}`) : "Connect taproot"}
+                </div>
+                {vaultOrdinals.map((ordinal) => (
+                  <div key={ordinal.id} className="text-[11px] font-mono text-slate-500 break-all">
+                    {ordinal.id}
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2">
+                <p className="text-slate-400 text-sm">Vault BTC Address</p>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    value={vaultFromRoute.derivedVaultAddress}
+                    readOnly
+                    className="bg-slate-700/50 border-slate-600 text-white text-center font-mono text-xs"
+                  />
+                  <Button
+                    onClick={() => {
+                      navigator.clipboard.writeText(vaultFromRoute.derivedVaultAddress);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1200);
+                    }}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-slate-400 text-sm">Deposit amount (BTC)</p>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={vaultReceiveAmountBtc}
+                  onChange={(event) => setVaultReceiveAmountBtc(event.target.value)}
+                  placeholder="0.01"
+                  className="bg-slate-700/50 border-slate-600 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Button onClick={() => void handleVaultDeposit()} disabled={depositingToVault} className="bg-purple-600 hover:bg-purple-700">
+                  {depositingToVault ? "Opening wallet..." : "Deposit to vault"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </WalletLayout>
+    );
+  }
 
 
   return (

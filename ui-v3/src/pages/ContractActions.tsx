@@ -8,11 +8,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Wallet } from "lucide-react";
 import { useState } from "react";
+import { Navigate, useParams } from "react-router-dom";
+import { getVaultFromRouteId } from "@/lib/vaultRoute";
 
 const ContractActions = () => {
+  const { walletId } = useParams<{ walletId?: string }>();
+  const vaultFromRoute = getVaultFromRouteId(walletId);
   const [contractAddress, setContractAddress] = useState("");
   const [functionName, setFunctionName] = useState("");
   const [functionArgs, setFunctionArgs] = useState("");
+
+  if (vaultFromRoute) {
+    return <Navigate to={`/btcvault/${vaultFromRoute.id}/policy`} replace />;
+  }
 
   return (
     <WalletLayout>

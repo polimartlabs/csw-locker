@@ -26,7 +26,8 @@ import { formatNumber } from "@/utils/numbers";
 import { ChainId } from "@stacks/network";
 import { Check, Copy, FileText, Plus, Settings, Trash2, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
+import { getVaultFromRouteId } from "@/lib/vaultRoute";
 
 type WalletInfo = {
   smart_contract?: {
@@ -40,7 +41,12 @@ type WalletInfo = {
 
 const WalletDetails = () => {
   const { walletId } = useParams<{ walletId: `${string}.${string}` }>();
+  const vaultFromRoute = getVaultFromRouteId(walletId);
   const [searchParams] = useSearchParams();
+  if (vaultFromRoute) {
+    return <Navigate to={`/btcvault/${vaultFromRoute.id}/settings`} replace />;
+  }
+
   const { addAdmin, transferOwnership } = useTxServices()
   const { toast } = useToast();
 

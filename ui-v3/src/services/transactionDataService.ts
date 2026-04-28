@@ -34,7 +34,6 @@ interface SwTxCache {
 }
 
 export class TransactionDataService {
-  private client: Client<paths, `${string}/${string}`>; // Declare the client
   private cache: TransactionCache = {};
   private readonly CACHE_TTL = 30000; // 30 seconds cache TTL
   private swTxCache: SwTxCache = {};
@@ -42,9 +41,11 @@ export class TransactionDataService {
   private lastRequestTime = 0;
   private readonly MIN_REQUEST_INTERVAL = 1000; // 1 second minimum between requests
 
-  constructor() {
-    const { api } = getClientConfig(); // Get the API config
-    this.client = createClient({ baseUrl: api }); // Initialize the client
+  constructor() {}
+
+  private clientForAddress(address: string): Client<paths, `${string}/${string}`> {
+    const { api } = getClientConfig(address);
+    return createClient({ baseUrl: api });
   }
 
   private isCacheValid(address: string): boolean {
@@ -96,7 +97,7 @@ export class TransactionDataService {
       // Enforce rate limiting to avoid CORS errors
       await this.enforceRateLimit();
 
-      const response = await this.client.GET(
+      const response = await this.clientForAddress(walletAddress).GET(
         "/extended/v1/address/{principal}/transactions_with_transfers",
         {
           params: {
@@ -112,17 +113,15 @@ export class TransactionDataService {
       );
 
       if (response.data) {
-        return response.data.results
-          .filter((tx) => tx.tx.tx_type === "token_transfer")
-          .map((tx) => {
-            return {
-              ...tx,
-              tx: {
-                ...tx.tx,
-              },
-              events: {},
-            };
-          });
+        return response.data.results.map((tx) => {
+          return {
+            ...tx,
+            tx: {
+              ...tx.tx,
+            },
+            events: {},
+          };
+        });
       }
 
       return [];
@@ -278,12 +277,13 @@ export class TransactionDataService {
         : [];
 
     const firstPCPrincipal = txData?.post_conditions?.[0]?.principal;
-    const pcSender =
-      firstPCPrincipal.type_id === "principal_contract"
+    const pcSender = !firstPCPrincipal
+      ? undefined
+      : firstPCPrincipal.type_id === "principal_contract"
         ? `${firstPCPrincipal.address}.${firstPCPrincipal.contract_name}`
         : firstPCPrincipal.type_id === "principal_standard"
-        ? firstPCPrincipal.address
-        : undefined;
+          ? firstPCPrincipal.address
+          : undefined;
 
     const action = this.determineTransactionAction(
       txData,
@@ -463,7 +463,7 @@ export class TransactionDataService {
 
   async getTransactionCount(walletAddress: string): Promise<number> {
     try {
-      const response = await this.client.GET(
+      const response = await this.clientForAddress(walletAddress).GET(
         "/extended/v1/address/{principal}/transactions",
         { params: { path: { principal: walletAddress }, query: { limit: 1 } } }
       );

@@ -17,3 +17,12 @@ export function formatNumber(number: number, decimals: number) {
 		style: "decimal"
 	}).format(number)
 }
+
+/** Display BTC from satoshis with fewer than 8 fraction digits. */
+export function formatBtcFromSats(sats: number) {
+	const btc = sats / 1e8;
+	return new Intl.NumberFormat("en-US", {
+		maximumFractionDigits: 5,
+		minimumFractionDigits: 0,
+	}).format(btc);
+}

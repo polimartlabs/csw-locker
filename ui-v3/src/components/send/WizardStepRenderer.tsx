@@ -4,7 +4,6 @@ import NFTSelectionStep from "@/components/send/NFTSelectionStep";
 import RecipientSelectionStep from "@/components/send/RecipientSelectionStep";
 import TransactionSummaryStep from "@/components/send/TransactionSummaryStep";
 import PrimaryButton from "@/components/ui/primary-button";
-import { Toaster } from "../ui/toaster";
 import { SmartWallet } from "@/services/interfaces";
 
 type WizardStep = "assetType" | "assetDetails" | "recipient" | "summary";
@@ -96,7 +95,6 @@ const WizardStepRenderer = ({
                   }}
                   onBack={() => onStepChange("assetType")}
                />
-               <Toaster />
             </>
          ) : (
             <>
@@ -112,7 +110,6 @@ const WizardStepRenderer = ({
                   }}
                   onBack={() => onStepChange("assetType")}
                />
-               <Toaster />
             </>
          );
 

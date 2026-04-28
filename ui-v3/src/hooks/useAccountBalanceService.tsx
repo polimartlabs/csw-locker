@@ -17,14 +17,21 @@ export function useAccountBalanceService(walletAddress: string) {
   const [sBtcBalance, setSBtcBalance] = useState<FungibleType | null>(null);
 
   // Check if we're in demo mode
-  const isDemoMode = useDemoMode();
+  const { isDemoMode } = useDemoMode();
 
-  // Select the appropriate service based on demo mode
+  // Demo mode should never override a connected real wallet address.
+  const useDemoServices =
+    isDemoMode &&
+    (!walletAddress ||
+      walletAddress.includes("demo-wallet") ||
+      walletAddress.includes("demo-address"));
+
+  // Select the appropriate service based on effective mode
   const balancesService = useMemo(() => {
-    return isDemoMode
+    return useDemoServices
       ? new MockAccountBalanceService()
       : new AccountBalanceService();
-  }, [isDemoMode]);
+  }, [useDemoServices]);
   const [nftBalance, setNftBalance] = useState<NftResponseBalance[]>([]);
   const [ftBalance, setFtBalance] = useState<FtResponseBalance[]>([]);
   const [rawBalance, setRawBalance] = useState<AccountBalanceType | null>(null);

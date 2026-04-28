@@ -7,10 +7,10 @@ import { useCallback, useEffect, useState } from "react";
 import { TransactionDataService } from "@/services/transactionDataService";
 import { TxInfo } from "@/services/interfaces";
 import { formatAmount } from "@/lib/txFormatUtils";
-import { fetchStxUsdPrice } from "@/lib/stxPrice";
 import { Skeleton } from "@/components/ui/skeleton";
 import TransactionItem from "../transactions/TransactionItem";
 import PrimaryButton from "../ui/primary-button";
+import { useAssetPrices } from "@/contexts/AssetPricesContext";
 
 interface RecentActivityProps {
   walletAddress?: string; // connected wallet
@@ -25,7 +25,7 @@ const RecentActivity = ({ walletAddress, smartWalletAddress }: RecentActivityPro
   const [loading, setLoading] = useState(false);
   const [offset, setOffset] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [stxUsd, setStxUsd] = useState<number | null>(null);
+  const { stxUsd } = useAssetPrices();
   const [refreshing, setRefreshing] = useState(false);
 
   // Determine which address to use
@@ -70,11 +70,6 @@ const RecentActivity = ({ walletAddress, smartWalletAddress }: RecentActivityPro
     }, 30000);
     return () => clearInterval(interval);
   }, [fetchTransactions, addressToUse]);
-
-  useEffect(() => {
-    fetchStxUsdPrice().then(setStxUsd);
-  }, []);
-
 
   const handleRefresh = async () => {
     setRefreshing(true);

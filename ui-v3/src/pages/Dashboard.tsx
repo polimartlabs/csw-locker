@@ -1,50 +1,86 @@
 import WalletLayout from "@/components/WalletLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowUpRight, TrendingUp, Activity, DollarSign, Settings } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { ArrowUpRight, TrendingUp, Activity, DollarSign, Settings, Bitcoin } from "lucide-react";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { useSelectedWallet } from "@/hooks/useSelectedWallet";
 import ActiveExtensions from "@/components/dashboard/ActiveExtensions";
 import AssetOverview from "@/components/dashboard/AssetOverview";
 import RecentActivity from "@/components/dashboard/RecentActivity";
-import SecondaryButton from "@/components/ui/secondary-button"; // Add this import if not present
-import PrimaryButton from "@/components/ui/primary-button";
+import SecondaryButton from "@/components/ui/secondary-button";
 import { useAccountBalanceService } from "@/hooks/useAccountBalanceService";
 import { useSmartWalletContractService } from "@/hooks/useSmartWalletContractService";
-import { formatNumber } from "@/utils/numbers";
-import useGetRates from "@/hooks/useGetRates";
-import { useEffect, useState } from "react";
+import { formatNumber, formatBtcFromSats } from "@/utils/numbers";
+import { useAssetPrices } from "@/contexts/AssetPricesContext";
+import { useBtcWallet } from "@/contexts/BtcWalletContext";
+import { useEffect, useMemo, useState } from "react";
 import { TransactionDataService } from "@/services/transactionDataService";
 import { Skeleton } from "@/components/ui/skeleton";
+import { loadBtcLocks, BTC_LOCKS_CHANGED_EVENT } from "@/lib/btcLockStorage";
+import { getBtcVault } from "@/lib/btcVaultStorage";
+import BtcVaultView from "@/pages/BtcVaultView";
+import { computePortfolioUsd } from "@/lib/portfolioUsd";
 
 const service = new TransactionDataService();
 
 const Dashboard = () => {
   const { walletId } = useParams<{ walletId: `${string}.${string}` }>()
+  const vaultFromRoute = walletId ? getBtcVault(walletId) : null;
   const { selectedWallet: walletData, isLoading } = useSelectedWallet();
-  const { stxBalance, nftBalance, ftBalance, loading, error } = useAccountBalanceService(walletId)
-  const { extensions, loading: extensionsLoading } = useSmartWalletContractService(walletId?.split('.')[0])
-  // Use the useGetRates hook for STX and sBTC rates
-  const { rates: stxRates, loading: stxLoading, usdPrice: stxUsdPrice, error: stxError } = useGetRates(".stx")
-  const { rates: sbtcRates, loading: sbtcLoading, usdPrice: sbtcUsdPrice, error: sbtcError } = useGetRates("SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token")
+  const { stxBalance, sBtcBalance, loading } = useAccountBalanceService(walletId)
+  const { extensions } = useSmartWalletContractService(walletId?.split('.')[0])
 
-  // Add state for transaction count
+  const { stxUsd, btcUsd, loading: pricesLoading } = useAssetPrices();
+  const { activeBtcAddress, balanceSats, loadingBalance: btcLoading } = useBtcWallet();
+
   const [txCount, setTxCount] = useState<number | null>(null);
-  const [txCountLoading, setTxCountLoading] = useState(false);
+  const [lockedBtcSats, setLockedBtcSats] = useState<number>(0);
 
   useEffect(() => {
     if (!walletId) return;
-
-    setTxCountLoading(true);
-    service.getTransactionCount(walletId)
-      .then(setTxCount)
-      .catch((error) => {
-        console.error('Error fetching transaction count:', error);
-        setTxCount(0);
-      })
-      .finally(() => setTxCountLoading(false));
+    service.getTransactionCount(walletId).then(setTxCount);
   }, [walletId]);
 
-  // Only show error state if wallet is not found after loading
+  useEffect(() => {
+    const recalc = () => {
+      const locks = loadBtcLocks().filter((l) => l.status !== "spent" && Boolean(l.txid));
+      setLockedBtcSats(locks.reduce((acc, l) => acc + (l.amountSats ?? 0), 0));
+    };
+    recalc();
+    window.addEventListener(BTC_LOCKS_CHANGED_EVENT, recalc);
+    window.addEventListener("storage", recalc);
+    return () => {
+      window.removeEventListener(BTC_LOCKS_CHANGED_EVENT, recalc);
+      window.removeEventListener("storage", recalc);
+    };
+  }, []);
+
+  // Aggregate USD value across STX + sBTC + native BTC. Each component is added only
+  // when both the balance and the spot price are known — partial sums avoid the
+  // "tiny number flickering up to the real total" effect during initial load.
+  const totalUsdValue = useMemo(() => {
+    return computePortfolioUsd({
+      stxBalance: stxBalance?.balance ? Number(stxBalance.balance) : null,
+      sBtcBalance: sBtcBalance?.balance ? Number(sBtcBalance.balance) : null,
+      btcBalanceSats: balanceSats,
+      lockedBtcSats,
+      stxUsd,
+      btcUsd,
+    });
+  }, [stxBalance?.balance, sBtcBalance?.balance, balanceSats, lockedBtcSats, stxUsd, btcUsd]);
+
+  const smartWalletSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (stxBalance?.balance) parts.push(`${formatNumber(Number(stxBalance.balance), 2)} STX`);
+    if (sBtcBalance?.balance && Number(sBtcBalance.balance) > 0) {
+      parts.push(`${formatNumber(Number(sBtcBalance.balance), 4)} sBTC`);
+    }
+    return parts.length ? parts.join(" · ") : "0.00 STX";
+  }, [stxBalance, sBtcBalance]);
+
+  const aggregateLoading = loading || pricesLoading || (!!activeBtcAddress && btcLoading);
+
+  if (vaultFromRoute) return <BtcVaultView />;
+
   if (!isLoading && !walletData) {
     return (
       <WalletLayout>
@@ -55,34 +91,9 @@ const Dashboard = () => {
     );
   }
 
-  // Check if stacking extension is active
   const isStackingActive = walletData?.extensions?.some(ext =>
     ext.toLowerCase().includes('stacking') || ext.toLowerCase().includes('stack')
   );
-
-  const StackSTXButton = () => (
-    <PrimaryButton asChild>
-      <Link to={`/stacking/${walletId}`}>
-        <TrendingUp className="mr-2 h-4 w-4" />
-        Stack STX
-      </Link>
-    </PrimaryButton>
-  );
-
-  // Calculate USD value with proper error handling
-  const calculateUSDValue = () => {
-    if (!stxBalance?.balance || !stxUsdPrice) {
-      return 0.00;
-    }
-    try {
-      return +stxBalance.balance * +stxUsdPrice;
-    } catch (error) {
-      console.error('Error calculating USD value:', error);
-      return 0.00;
-    }
-  };
-
-  const usdValue = calculateUSDValue();
 
   return (
     <WalletLayout>
@@ -95,23 +106,21 @@ const Dashboard = () => {
         </div>
 
         {/* Balance Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-400">Total Balance</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-400">Smart wallet</CardTitle>
               <DollarSign className="h-4 w-4 text-slate-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-xl font-bold text-white truncate">
                 {loading ? (
-                  <Skeleton className="h-8 w-24" />
-                ) : stxBalance ? (
-                  <p>{stxBalance?.balance} STX</p>
+                  <Skeleton className="h-7 w-32" />
                 ) : (
-                  <p>0.00 STX</p>
+                  <p title={smartWalletSummary}>{smartWalletSummary}</p>
                 )}
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 truncate">
                 {walletId ? `${walletId.slice(0, 4)}...${walletId.slice(walletId.length - 15, walletId.length)}` : ''}
               </p>
             </CardContent>
@@ -119,22 +128,43 @@ const Dashboard = () => {
 
           <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-400">USD Value</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-400">BTC wallet</CardTitle>
+              <Bitcoin className="h-4 w-4 text-amber-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold text-amber-300 truncate">
+                {activeBtcAddress ? (
+                  btcLoading && balanceSats == null ? (
+                    <Skeleton className="h-7 w-28" />
+                  ) : (
+                    `${formatBtcFromSats(balanceSats ?? 0)} BTC`
+                  )
+                ) : (
+                  "Not connected"
+                )}
+              </div>
+              <p className="text-xs text-slate-400 truncate">
+                {activeBtcAddress ? `${activeBtcAddress.slice(0, 6)}...${activeBtcAddress.slice(-8)}` : "Connect Bitcoin wallet"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-400">Total USD value</CardTitle>
               <TrendingUp className="h-4 w-4 text-slate-400" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-400">
-                {stxLoading ? (
+                {aggregateLoading && totalUsdValue === 0 ? (
                   <Skeleton className="h-8 w-20" />
-                ) : usdValue > 0 ? (
-                  <p>${formatNumber(usdValue, 2)}</p>
+                ) : totalUsdValue > 0 ? (
+                  <p>${formatNumber(totalUsdValue, 2)}</p>
                 ) : (
                   <p>$0.00</p>
                 )}
               </div>
-              <p className="text-xs text-slate-400">
-                {stxError ? 'Rate unavailable' : 'Current market value'}
-              </p>
+              <p className="text-xs text-slate-400">Portfolio value</p>
             </CardContent>
           </Card>
 
@@ -145,13 +175,25 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-white">
-                {txCountLoading ? (
-                  <Skeleton className="h-8 w-12" />
-                ) : (
-                  txCount !== null ? txCount : 0
-                )}
+                {txCount !== null ? txCount : <Skeleton className="h-8 w-8" />}
               </div>
               <p className="text-xs text-slate-400">Total transactions</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-400">Locked BTC</CardTitle>
+              <Bitcoin className="h-4 w-4 text-amber-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="font-semibold text-amber-300 leading-tight">
+                <span className="font-mono text-sm sm:text-lg md:text-xl break-all">
+                  {formatBtcFromSats(lockedBtcSats)}
+                </span>{" "}
+                <span className="text-[10px] sm:text-xs font-bold text-amber-200/80">BTC</span>
+              </div>
+              <p className="text-xs text-slate-400">Total active BTC locks</p>
             </CardContent>
           </Card>
         </div>

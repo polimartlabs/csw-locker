@@ -1,10 +1,16 @@
 
 import WalletContractDetails from "@/components/WalletContractDetails";
 import WalletLayout from "@/components/WalletLayout";
-import { useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
+import { getVaultFromRouteId } from "@/lib/vaultRoute";
 
 const ContractDetails = () => {
   const { walletId } = useParams<{ walletId: `${string}.${string}` }>()
+  const vaultFromRoute = getVaultFromRouteId(walletId);
+
+  if (vaultFromRoute) {
+    return <Navigate to={`/btcvault/${vaultFromRoute.id}/policy`} replace />;
+  }
 
   return (
     <WalletLayout>

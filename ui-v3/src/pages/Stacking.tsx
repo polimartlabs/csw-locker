@@ -6,10 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowUp } from "lucide-react";
 import { useState } from "react";
+import { Navigate, useParams } from "react-router-dom";
+import { getVaultFromRouteId } from "@/lib/vaultRoute";
 
 const Stacking = () => {
+  const { walletId } = useParams<{ walletId?: string }>();
+  const vaultFromRoute = getVaultFromRouteId(walletId);
   const [stackingAmount, setStackingAmount] = useState("");
   const [cycles, setCycles] = useState("");
+
+  if (vaultFromRoute) {
+    return <Navigate to={`/dashboard/${vaultFromRoute.id}`} replace />;
+  }
 
   return (
     <WalletLayout>
